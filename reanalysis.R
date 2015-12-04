@@ -84,3 +84,8 @@ for (i in seq(1, length(comparisons), 2)){
   take.max.abs <- abs.ordered[!duplicated(abs.ordered$Target.Gene.Symbol), ]
   tophits[[strsplit(comparisons[i], "vs")[[1]][1]]] <- take.max.abs
 }
+
+final.data <- merge(tophits$NE, tophits$ERG, by = "Target.Gene.Symbol", all = TRUE)
+final.data <- merge(final.data, tophits$MRG, by = "Target.Gene.Symbol", all = TRUE)
+colnames(final.data) <- c("Target.Gene.Symbol", "NE", "ERG", "MRG")
+final.data[is.na(final.data)] <- 0
