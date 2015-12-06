@@ -5,7 +5,8 @@ library(zoo)
 #tf_data <- read.table("trans_fact.txt",sep="\t")
 library(readxl)
 proc_data <- read_excel("data/nature13990-s4.xlsx", sheet = "All_stages_KD_0.05_results")
-tf_data <- read.csv("trans_fact.csv")
+tf.data <- read.table("trans_fact.txt", sep="\t", stringsAsFactors = F,
+                      fill = TRUE, quote="", header = TRUE, fileEncoding = "ISO-8859-2")
 tf_data$Gene.ID <- na.locf(tf_data$Gene.ID)
 tf_data$Description <- na.locf(tf_data$Description)
 tf_data <- tf_data[tf_data$Species == 'Human',]
