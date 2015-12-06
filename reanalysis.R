@@ -1,9 +1,10 @@
 library(readxl)
 library(dplyr)
 library(edgeR)
-library(ggplot2)
+library(gplots)
 
 raw_data <- read_excel("data/nature13990-s4.xlsx", sheet = "Raw shRNA counts")
+paper.data <- read_excel("data/nature13990-s4.xlsx", sheet = "All_stages_KD_0.05_results")
 
 # experiment design info
 exp.info <- matrix(unlist(strsplit(colnames(raw_data[,-(1:3)]), "_")),
@@ -21,7 +22,7 @@ data <- DGEList(counts = raw_data[,-(1:3)], genes = raw_data[,1:3],
 shrnas.to.keep <- rowSums(edgeR::cpm(data) > 0.5) >= 2
 data <- data[shrnas.to.keep, , keep.lib.sizes=FALSE]
 
-data <- edgeR::calcNormFactors(data)
+# data <- edgeR::calcNormFactors(data)
 
 # attempt to reproduce extended data figure 3f
 col.order <- c("NE_sh_minus_4", "NE_sh_minus_3", "NE_sh_minus_2",
@@ -54,7 +55,7 @@ contrasts <- makeContrasts(ERGvsControl = ERG.24h-ERG.plus,
                            MRGvsControl = MRG.24h-MRG.plus,
                            MRGvsMinus = MRG.minus - MRG.plus,
                            NEvsControl = NE.24h-NE.plus,
-                           NEvsMinus = NE.minus - NE.plus, levels=design2)
+                           NEvsMinus = NE.minus - NE.plus, levels=design)
 
 fit <- edgeR::glmFit(data, design = design)
 result <- list()
@@ -67,7 +68,8 @@ for (val in comparisons){
   by.gene <- group_by(sig.genes, Target.Gene.Symbol)
   same.as.majority.sign <- function(x) as.numeric(sign(x) == sign(mean(sign(x))))
   gene.info <- summarize(by.gene, count = n(), means = mean(sign(logFC)),
-                         wmeanfc = sum(logFC*logCPM*same.as.majority.sign(logFC)/sum(logCPM*same.as.majority.sign(logFC))))
+                         # wmeanfc = sum(logFC*logCPM*same.as.majority.sign(logFC)/sum(logCPM*same.as.majority.sign(logFC))))
+                         wmeanfc = sum(logFC*logCPM/sum(logCPM)))
   gene.info <- filter(gene.info, count >= 2 & means != 0)
   gene.info <- gene.info[c("Target.Gene.Symbol", "wmeanfc")]
   result[[val]] <- gene.info
@@ -87,5 +89,23 @@ for (i in seq(1, length(comparisons), 2)){
 
 final.data <- merge(tophits$NE, tophits$ERG, by = "Target.Gene.Symbol", all = TRUE)
 final.data <- merge(final.data, tophits$MRG, by = "Target.Gene.Symbol", all = TRUE)
-colnames(final.data) <- c("Target.Gene.Symbol", "NE", "ERG", "MRG")
+colnames(final.data) <- c("Gene", "NE", "ERG", "MRG")
 final.data[is.na(final.data)] <- 0
+
+final.mat <- as.matrix(final.data[, 2:4])
+rownames(final.mat) <- final.data[, 1]
+final.mat[final.mat > 2] <- 2
+final.mat[final.mat < -2] <- -2
+
+heatmap.2(final.mat[rowSums(final.mat > 0) >= 1, ], col = greenred(75), Colv = F,
+          dendrogram = "none", density.info = "none", key = TRUE, trace = "none",
+          main="Reproduced Figure", lhei = c(1, 5), margins = c(4, 5),
+          key.xlab = "Depletion Score", key.title = NA, cexRow=0.5, cexCol = 1)
+
+paper.mat <- as.matrix(paper.data[, 2:4])
+rownames(paper.mat) <- paper.data$Gene
+
+heatmap.2(paper.mat[rowSums(paper.mat > 0) >= 1, ], col = greenred(75), Colv = F,
+          dendrogram = "none", density.info = "none", key = TRUE, trace = "none",
+          main="Data from paper", lhei = c(1, 5), margins = c(4, 5),
+          key.xlab = "Depletion Score", key.title = NA, cexRow=0.5, cexCol = 1)
