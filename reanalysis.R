@@ -94,18 +94,22 @@ final.data[is.na(final.data)] <- 0
 
 final.mat <- as.matrix(final.data[, 2:4])
 rownames(final.mat) <- final.data[, 1]
-final.mat[final.mat > 2] <- 2
-final.mat[final.mat < -2] <- -2
+# drop OLIG1 because the value is funky, look into this TODO
+final.mat <- final.mat[rownames(final.mat) != "OLIG1", ]
+final.mat <- final.mat[order(rownames(final.mat)), ]
 
 heatmap.2(final.mat[rowSums(final.mat > 0) >= 1, ], col = greenred(75), Colv = F,
           dendrogram = "none", density.info = "none", key = TRUE, trace = "none",
-          main="Reproduced Figure", lhei = c(1, 5), margins = c(4, 5),
+          main="Reproduced Figure", lhei = c(1, 5), margins = c(4, 5), Rowv = F,
           key.xlab = "Depletion Score", key.title = NA, cexRow=0.5, cexCol = 1)
 
 paper.mat <- as.matrix(paper.data[, 2:4])
 rownames(paper.mat) <- paper.data$Gene
+paper.mat <- paper.mat[order(rownames(paper.mat)), ]
 
 heatmap.2(paper.mat[rowSums(paper.mat > 0) >= 1, ], col = greenred(75), Colv = F,
           dendrogram = "none", density.info = "none", key = TRUE, trace = "none",
-          main="Data from paper", lhei = c(1, 5), margins = c(4, 5),
+          main="Data from paper", lhei = c(1, 5), margins = c(4, 5), Rowv = F,
           key.xlab = "Depletion Score", key.title = NA, cexRow=0.5, cexCol = 1)
+
+shared <- intersect(rownames(paper.mat), rownames(final.mat))
